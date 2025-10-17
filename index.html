@@ -143,7 +143,7 @@
 
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getDatabase } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
 
   const firebaseConfig = {
@@ -151,7 +151,7 @@
     authDomain: "a1-39b0e.firebaseapp.com",
     databaseURL: "https://a1-39b0e-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "a1-39b0e",
-    storageBucket: "a1-39b0e.appspot.com",   // ← sửa đúng domain
+    storageBucket: "a1-39b0e.appspot.com",
     messagingSenderId: "526770997213",
     appId: "1:526770997213:web:5db8c07a9fd7502823d834",
     measurementId: "G-X7NLNNK0H4"
@@ -160,163 +160,156 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const analytics = getAnalytics(app);
-  </script>
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  const form = document.getElementById('friend-form');
+  const container = document.getElementById('card-container');
+  const message = document.getElementById('form-message');
+  const error = document.getElementById('form-error');
+  const saveBtn = document.getElementById('saveBtn');
+  let avatarLink = "";
+  let editingId = null;
 
-    const form = document.getElementById('friend-form');
-    const container = document.getElementById('card-container');
-    const message = document.getElementById('form-message');
-    const error = document.getElementById('form-error');
-    const saveBtn = document.getElementById('saveBtn');
-    let avatarLink = "";
-    let editingId = null;
+  window.toggleForm = () => form.style.display = form.style.display === "block" ? "none" : "block";
 
-    window.toggleForm = () => form.style.display = form.style.display === "block" ? "none" : "block";
+  window.previewAvatar = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      avatarLink = ev.target.result;
+      const img = document.getElementById('avatarPreview');
+      img.src = avatarLink;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
 
-    window.previewAvatar = e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        avatarLink = ev.target.result;
-        const img = document.getElementById('avatarPreview');
-        img.src = avatarLink;
-        img.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
+  window.submitForm = async function() {
+    const name = document.getElementById('name').value;
+    if (!name) { error.textContent = "Vui lòng nhập tên bạn!"; return; }
+
+    const friend = {
+      name,
+      phone: document.getElementById('phone').value,
+      birthday: document.getElementById('birthday').value,
+      email: document.getElementById('email').value,
+      facebook: document.getElementById('facebook').value,
+      instagram: document.getElementById('instagram').value,
+      github: document.getElementById('github').value,
+      tiktok: document.getElementById('tiktok').value,
+      youtube: document.getElementById('youtube').value,
+      avatar: avatarLink
     };
 
-    window.submitForm = async function() {
-      const name = document.getElementById('name').value;
-      if (!name) { error.textContent = "Vui lòng nhập tên bạn!"; return; }
-
-      const friend = {
-        name,
-        phone: document.getElementById('phone').value,
-        birthday: document.getElementById('birthday').value,
-        email: document.getElementById('email').value,
-        facebook: document.getElementById('facebook').value,
-        instagram: document.getElementById('instagram').value,
-        github: document.getElementById('github').value,
-        tiktok: document.getElementById('tiktok').value,
-        youtube: document.getElementById('youtube').value,
-        avatar: avatarLink
-      };
-
-      try {
-        if (editingId) {
-          await update(ref(db, 'friends/' + editingId), friend);
-          message.textContent = "✅ Đã cập nhật bạn!";
-          editingId = null;
-          saveBtn.textContent = "Lưu bạn";
-        } else {
-          await push(ref(db, 'friends'), friend);
-          message.textContent = "✅ Đã thêm bạn!";
-        }
-        error.textContent = "";
-        form.reset();
-        document.getElementById('avatarPreview').style.display = 'none';
-      } catch (err) { error.textContent = "Lỗi: " + err.message; }
-    };
-
-    onValue(ref(db, 'friends'), (snapshot) => {
-      const data = snapshot.val();
-      container.innerHTML = "";
-      if (!data) return;
-      Object.entries(data).forEach(([id, f]) => {
-        const card = document.createElement('friend-card');
-        card.setAttribute("data-id", id);
-        for (const key in f) if (f[key]) card.setAttribute(key, f[key]);
-        container.appendChild(card);
-      });
-    });
-
-    class FriendCard extends HTMLElement {
-      connectedCallback() {
-        const id = this.getAttribute("data-id");
-        const name = this.getAttribute("name");
-        const phone = this.getAttribute("phone");
-        const birthday = this.getAttribute("birthday");
-        const email = this.getAttribute("email");
-        const facebook = this.getAttribute("facebook");
-        const instagram = this.getAttribute("instagram");
-        const github = this.getAttribute("github");
-        const tiktok = this.getAttribute("tiktok");
-        const youtube = this.getAttribute("youtube");
-        const avatar = this.getAttribute("avatar");
-
-        this.innerHTML = `
-          <div class="btns">
-            <button onclick="editFriend('${id}')"><i class="fas fa-pen"></i></button>
-            <button class="del" onclick="deleteFriend('${id}')"><i class="fas fa-trash"></i></button>
-          </div>
-          <div class="card-content">
-            <div class="card-header">
-              <img src="${avatar || 'https://via.placeholder.com/80'}" class="avatar">
-              <h2>${name}</h2>
-            </div>
-            <div class="card-body">
-              <p><strong>SĐT:</strong> ${phone || '—'}</p>
-              <p><strong>Ngày sinh:</strong> ${birthday || '—'}</p>
-              <p><strong>Email:</strong> ${email || '—'}</p>
-              <div class="social-links">
-                ${facebook ? `<a href="${facebook}" target="_blank"><i class="fab fa-facebook"></i></a>` : ""}
-                ${instagram ? `<a href="${instagram}" target="_blank"><i class="fab fa-instagram"></i></a>` : ""}
-                ${github ? `<a href="${github}" target="_blank"><i class="fab fa-github"></i></a>` : ""}
-                ${tiktok ? `<a href="${tiktok}" target="_blank"><i class="fab fa-tiktok"></i></a>` : ""}
-                ${youtube ? `<a href="${youtube}" target="_blank"><i class="fab fa-youtube"></i></a>` : ""}
-              </div>
-            </div>
-          </div>`;
-      }
-    }
-    customElements.define("friend-card", FriendCard);
-
-    window.deleteFriend = id => confirm("Xóa người bạn này?") && remove(ref(db, `friends/${id}`));
-
-    window.editFriend = id => {
-      editingId = id;
-      const f = container.querySelector(`[data-id="${id}"]`);
-      document.getElementById('name').value = f.getAttribute("name") || "";
-      document.getElementById('phone').value = f.getAttribute("phone") || "";
-      document.getElementById('birthday').value = f.getAttribute("birthday") || "";
-      document.getElementById('email').value = f.getAttribute("email") || "";
-      document.getElementById('facebook').value = f.getAttribute("facebook") || "";
-      document.getElementById('instagram').value = f.getAttribute("instagram") || "";
-      document.getElementById('github').value = f.getAttribute("github") || "";
-      document.getElementById('tiktok').value = f.getAttribute("tiktok") || "";
-      document.getElementById('youtube').value = f.getAttribute("youtube") || "";
-      avatarLink = f.getAttribute("avatar") || "";
-      if (avatarLink) {
-        const img = document.getElementById('avatarPreview');
-        img.src = avatarLink;
-        img.style.display = 'block';
-      }
-      saveBtn.textContent = "Cập nhật";
-      form.style.display = "block";
-    };
-
-    const audio = document.getElementById('bgMusic');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const songSelector = document.getElementById('songSelector');
-    window.togglePlayPause = () => {
-      if (audio.paused) {
-        audio.play().then(() => playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>');
+    try {
+      if (editingId) {
+        await update(ref(db, 'friends/' + editingId), friend);
+        message.textContent = "✅ Đã cập nhật bạn!";
+        editingId = null;
+        saveBtn.textContent = "Lưu bạn";
       } else {
-        audio.pause();
-        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        await push(ref(db, 'friends'), friend);
+        message.textContent = "✅ Đã thêm bạn!";
       }
-    };
-    window.changeSong = () => {
-      audio.src = songSelector.value;
-      audio.play();
-      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    };
+      error.textContent = "";
+      form.reset();
+      document.getElementById('avatarPreview').style.display = 'none';
+    } catch (err) { error.textContent = "Lỗi: " + err.message; }
+  };
+
+  onValue(ref(db, 'friends'), (snapshot) => {
+    const data = snapshot.val();
+    container.innerHTML = "";
+    if (!data) return;
+    Object.entries(data).forEach(([id, f]) => {
+      const card = document.createElement('friend-card');
+      card.setAttribute("data-id", id);
+      for (const key in f) if (f[key]) card.setAttribute(key, f[key]);
+      container.appendChild(card);
+    });
+  });
+
+  class FriendCard extends HTMLElement {
+    connectedCallback() {
+      const id = this.getAttribute("data-id");
+      const name = this.getAttribute("name");
+      const phone = this.getAttribute("phone");
+      const birthday = this.getAttribute("birthday");
+      const email = this.getAttribute("email");
+      const facebook = this.getAttribute("facebook");
+      const instagram = this.getAttribute("instagram");
+      const github = this.getAttribute("github");
+      const tiktok = this.getAttribute("tiktok");
+      const youtube = this.getAttribute("youtube");
+      const avatar = this.getAttribute("avatar");
+
+      this.innerHTML = `
+        <div class="btns">
+          <button onclick="editFriend('${id}')"><i class="fas fa-pen"></i></button>
+          <button class="del" onclick="deleteFriend('${id}')"><i class="fas fa-trash"></i></button>
+        </div>
+        <div class="card-content">
+          <div class="card-header">
+            <img src="${avatar || 'https://via.placeholder.com/80'}" class="avatar">
+            <h2>${name}</h2>
+          </div>
+          <div class="card-body">
+            <p><strong>SĐT:</strong> ${phone || '—'}</p>
+            <p><strong>Ngày sinh:</strong> ${birthday || '—'}</p>
+            <p><strong>Email:</strong> ${email || '—'}</p>
+            <div class="social-links">
+              ${facebook ? `<a href="${facebook}" target="_blank"><i class="fab fa-facebook"></i></a>` : ""}
+              ${instagram ? `<a href="${instagram}" target="_blank"><i class="fab fa-instagram"></i></a>` : ""}
+              ${github ? `<a href="${github}" target="_blank"><i class="fab fa-github"></i></a>` : ""}
+              ${tiktok ? `<a href="${tiktok}" target="_blank"><i class="fab fa-tiktok"></i></a>` : ""}
+              ${youtube ? `<a href="${youtube}" target="_blank"><i class="fab fa-youtube"></i></a>` : ""}
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+  customElements.define("friend-card", FriendCard);
+
+  window.deleteFriend = id => confirm("Xóa người bạn này?") && remove(ref(db, `friends/${id}`));
+
+  window.editFriend = id => {
+    editingId = id;
+    const f = container.querySelector(`[data-id="${id}"]`);
+    document.getElementById('name').value = f.getAttribute("name") || "";
+    document.getElementById('phone').value = f.getAttribute("phone") || "";
+    document.getElementById('birthday').value = f.getAttribute("birthday") || "";
+    document.getElementById('email').value = f.getAttribute("email") || "";
+    document.getElementById('facebook').value = f.getAttribute("facebook") || "";
+    document.getElementById('instagram').value = f.getAttribute("instagram") || "";
+    document.getElementById('github').value = f.getAttribute("github") || "";
+    document.getElementById('tiktok').value = f.getAttribute("tiktok") || "";
+    document.getElementById('youtube').value = f.getAttribute("youtube") || "";
+    avatarLink = f.getAttribute("avatar") || "";
+    if (avatarLink) {
+      const img = document.getElementById('avatarPreview');
+      img.src = avatarLink;
+      img.style.display = 'block';
+    }
+    saveBtn.textContent = "Cập nhật";
+    form.style.display = "block";
+  };
+
+  const audio = document.getElementById('bgMusic');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const songSelector = document.getElementById('songSelector');
+  window.togglePlayPause = () => {
+    if (audio.paused) {
+      audio.play().then(() => playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>');
+    } else {
+      audio.pause();
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+  };
+  window.changeSong = () => {
+    audio.src = songSelector.value;
+    audio.play();
+    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+  };
   </script>
 </body>
   </html>
