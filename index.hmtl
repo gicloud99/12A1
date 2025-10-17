@@ -141,25 +141,21 @@
     <source src="https://cudatto1m.github.io/Thongtinhoc/nhacnen.mp3" type="audio/mpeg">
   </audio>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-//các bạn thay firebase khác thì thay
 const firebaseConfig = {
   apiKey: "AIzaSyDmbQ4wYvPQLmngUG2_iJFen4cTeiB_soE",
   authDomain: "a1-39b0e.firebaseapp.com",
   projectId: "a1-39b0e",
-  storageBucket: "a1-39b0e.firebasestorage.app",
+  storageBucket: "a1-39b0e.appspot.com",
   messagingSenderId: "526770997213",
   appId: "1:526770997213:web:ae728d285e5d7df623d834",
   measurementId: "G-QDHZZYVZD2"
 };
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
